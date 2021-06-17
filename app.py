@@ -19,14 +19,71 @@ session = Session(engine)
 
 app = Flask(__name__)
 
-@app.route('/')
-def Welcome():
-    return (
-    '''
+@app.route("/")
+
+def welcome():
+    return(
+    '''<xmp>
     Welcome to the Climate Analysis API!
     Available Routes:
     /api/v1.0/precipitation
     /api/v1.0/stations
     /api/v1.0/tobs
     /api/v1.0/temp/start/end
-    ''')
+    </xmp>''')
+
+@app.route("/api/v1.0/precipitation")
+
+def precipitation():
+    last_date = [row[2] for row in session.execute('SELECT * FROM Measurement ORDER BY date DESC LIMIT 1')]
+    last_entry_db = last_date[0].split('-')
+    year = int(last_entry_db[0])
+    month = int(last_entry_db[1])
+    day = int(last_entry_db[2])
+    last_date_db = dt.datetime(year, month, day)
+    print(last_date_db)
+    # Calculate the date one year from the last date in data set.
+    prev_year = last_date_db - dt.timedelta(days = 365)
+    precipitation = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= prev_year).all()
+    precip = {date: prcp for date, prcp in precipitation}
+    return jsonify(precip)
+    
+@app.route("/api/v1.0/stations")
+def stations():
+    results = session.query(Station.station).all()
+    stations = list(np.ravel(results))
+    return jsonify(stations=stations)
+
+@app.route("/api/v1.0/tobs")
+def temp_monthly():
+    last_date = [row[2] for row in session.execute('SELECT * FROM Measurement ORDER BY date DESC LIMIT 1')]
+    last_entry_db = last_date[0].split('-')
+    year = int(last_entry_db[0])
+    month = int(last_entry_db[1])
+    day = int(last_entry_db[2])
+    last_date_db = dt.datetime(year, month, day)
+    # Calculate the date one year from the last date in data set.
+    prev_year = last_date_db - dt.timedelta(days = 365)
+    results = session.query(Measurement.tobs).filter(Measurement.station == 'USC00519281').filter(Measurement.date >= prev_year).all()
+    temps = list(np.ravel(results))
+    return jsonify(temps=temps)
+
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+
+def stats(start=None, end=None):
+    query_list = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
+
+    if not end:
+        results = session.query(*query_list).filter(Measurement.date >= start).all()
+        temps = list(np.ravel(results))
+        return jsonify(temps)
+
+    results = session.query(*query_list).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
+    temps = list(np.ravel(results))
+    return jsonify(temps)
+
+
+
+if __name__ == '__main__':
+	app.run(debug=True)
