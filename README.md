@@ -4,9 +4,9 @@
 
 The purpose of the analysis is to report summary temperatures statistics for Hawaii.  The temperature summaries will help to evaulate the potential of a proposed combination surf shop and ice cream shop.  
   
-[June temperatures](June_temperature_statistics.png)  
+![June temperatures](June_temperature_statistics.png)  
 
-[December temperatures](December_temperature_statistics.png)  
+![December temperatures](December_temperature_statistics.png)  
 
 The temperature data were delivered as a SQLite database.  The database was reflected onto a database object.  The data were filtered by month, stored in pandas dataframes, and summary statistice were generated using pandas.describe().  
   
